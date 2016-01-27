@@ -66,4 +66,13 @@ public abstract class AbsActor<T extends Message> implements Actor<T> {
         this.self = self;
         return this;
     }
+
+    /**
+     * Receive message
+     *
+     * @override
+     */
+    public void receive(T message){
+        //Il messaggio andrà inserito nella mail list che avrà un accesso sinronizzato per l'inserimento
+    }
 }
