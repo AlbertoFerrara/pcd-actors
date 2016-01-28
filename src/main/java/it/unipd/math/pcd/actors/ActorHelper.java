@@ -21,7 +21,7 @@ public class ActorHelper implements Runnable {
     public void run() {
         //ciclo finche il thread che sta eseguendo non entra nello stato interrupted
         try{
-            while(Thread.currentThread().isInterrupted() != false){
+            while(!Thread.currentThread().isInterrupted()){
                 synchronized (mBox){
                     //finchè non ci sono nuovi messaggi nella mail box metto in attesa
                     while(mBox.getSize()==0){
@@ -29,9 +29,9 @@ public class ActorHelper implements Runnable {
                     }
                 }
                 //se sono qui, ho superato la condizione e la dimensione della mailbox>0
-                synchronized (mBox){
+                synchronized (this){
                     //rimuovo il nuovo messaggio dalla prima posizione
-                    ConcMessage mex = mBox.pop(0);
+                    ConcMessage mex = mBox.pop();
                     //setto il mandante del messaggio e lo passo all'actor che deve riceverlo
                     act.sender = mex.getcActor();
                     //setto il messaggio che l'actor deve ricevere
@@ -47,7 +47,7 @@ public class ActorHelper implements Runnable {
             synchronized (mBox){
                 while(mBox.getSize()>0){
                     //rimuovo il nuovo messaggio dalla prima posizione
-                    ConcMessage mex = mBox.pop(0);
+                    ConcMessage mex = mBox.pop();
                     //setto il mandante del messaggio e lo passo all'actor che deve riceverlo
                     act.sender = mex.getcActor();
                     //setto il messaggio che l'actor deve ricevere
@@ -57,7 +57,7 @@ public class ActorHelper implements Runnable {
             //qui ho svuotato tutta la coda dei messaggi
             synchronized (act){
                 act.stopDone = true;
-                act.notifyAll();
+                act.notify();
             }
         }
 

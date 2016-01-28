@@ -10,12 +10,12 @@ public interface MailBox<T extends Message> {
     /*
      * Aggiunge un messaggio alla MailBox
      */
-    boolean push(T mex, ActorRef<? extends Message> sender);
+    void push(T mex, ActorRef<? extends Message> sender);
 
     /*
      * Rimozione messaggio dalla MailBox
      */
-    ConcMessage<? extends Message> pop(int indice);
+    ConcMessage<? extends Message> pop();
 
     /*
         Ottengo dimensione della mailbox

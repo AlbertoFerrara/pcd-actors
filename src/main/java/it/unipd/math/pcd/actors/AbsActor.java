@@ -77,8 +77,9 @@ public abstract class AbsActor<T extends Message> implements Actor<T> {
 
     public final void gestisciMessaggi(T mess, ActorRef<T> sender){
         synchronized (mailBox){
-            mailBox.push(mess, sender);
-            mailBox.notifyAll();
+                 mailBox.push(mess, sender);
+                 mailBox.notifyAll();
+
         }
     }
 
@@ -86,14 +87,6 @@ public abstract class AbsActor<T extends Message> implements Actor<T> {
         helper.interrupt();
     }
 
-    /**
-     * Receive message
-     *
-     * @override
-     */
-    public void receive(T message){
-        //Il messaggio andrà inserito nella mail list che avrà un accesso sinronizzato per l'inserimento
-    }
 
     //Costruttore classe AbsActor
     public AbsActor() {
@@ -101,4 +94,5 @@ public abstract class AbsActor<T extends Message> implements Actor<T> {
         //Faccio partire il thread che gestisce connessioni in ingresso
         helper.start();
     }
+
 }

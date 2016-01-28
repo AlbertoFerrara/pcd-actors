@@ -4,33 +4,31 @@ package it.unipd.math.pcd.actors;
  * Created by Alberto Ferrara
  */
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 
 /**
  * Implementazione della mail box
  */
 public class ImplMailBox<T extends Message> implements MailBox<T>  {
     //Garantisco che la mail box sia creata una sola volta e che il riferimento non possa mai cambiare
-    //Uso arrayList per poter rimuovere un messaggio in qualsiasi punto
-    protected final ArrayList<ConcMessage<T>> arrayL = new ArrayList<>();
+    protected final LinkedList<ConcMessage<T>> listL = new LinkedList<>();
 
-    public boolean push(T mex, ActorRef<? extends Message> sender){
-        //sincronizzo su arrayl che è la risorsa condivisa
-        synchronized (arrayL) {
-            boolean b = arrayL.add(new ConcMessage<T>(mex, sender));
-            return b;
+    public void push(T mex, ActorRef<? extends Message> sender){
+        //sincronizzo su listaL che è la risorsa condivisa
+        synchronized (listL) {
+            listL.addFirst(new ConcMessage<T>(mex, sender));
         }
     }
 
-    public ConcMessage<? extends Message> pop(int indice){
-        //sincronizzo su arrayl che è la risorsa condivisa
-        synchronized (arrayL) {
-            return arrayL.remove(indice);
+    public ConcMessage<? extends Message> pop(){
+        //sincronizzo su listL che è la risorsa condivisa
+        synchronized (listL) {
+            return listL.removeLast();
         }
     }
 
     public int getSize(){
-        return arrayL.size();
+        return listL.size();
     }
 
 }

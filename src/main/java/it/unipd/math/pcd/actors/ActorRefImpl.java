@@ -19,6 +19,7 @@ public class ActorRefImpl<T extends Message> implements ActorRef<T> {
 
     @Override
     public void send(T message, ActorRef to) {
-
+        AbsActor aux = (AbsActor) AbsActSys.getActor(to);
+        aux.gestisciMessaggi(message, this);
     }
 }

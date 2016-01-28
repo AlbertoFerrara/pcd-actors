@@ -9,13 +9,14 @@ public final class ActorSysImp extends AbsActorSystem {
 
 
 
-    public synchronized void stop(ActorRef<?> actor) throws NoSuchActorException{
+    public  void stop(ActorRef<?> actor) throws NoSuchActorException{
         if(containKey(actor)) {
             //casto a abs perche ritorna un actor
             AbsActor aux = (AbsActor) getActor(actor);
             //stoppo il thread che gestisce ricezione nuovi messaggi
             aux.stopHelper();
 
+            synchronized (aux) {
                 while (!aux.stopDone) {
                     try {
                         aux.wait();
@@ -24,6 +25,7 @@ public final class ActorSysImp extends AbsActorSystem {
                     }
                 }
                 removeActor(actor);
+            }
         }
         else
             throw new NoSuchActorException();
