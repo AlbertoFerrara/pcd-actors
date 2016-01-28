@@ -56,6 +56,14 @@ public abstract class AbsActor<T extends Message> implements Actor<T> {
      */
     protected ActorRef<T> sender;
 
+    //campo dati privato e finale per evitare modifiche del riferimento, è la mail box del singolo attore
+    private final MailBox<T> mailBox= new ImplMailBox<>();
+
+    //variabile che uso per capire se l'attore è stato interrotto e ha finito di gestire tutti i suoi messaggi
+    public boolean stopDone = false;
+
+    //thread che gestisce i messaggi in ingresso
+    private final Thread helper = new Thread(new ActorHelper(this, mailBox));
     /**
      * Sets the self-referece.
      *
@@ -67,6 +75,17 @@ public abstract class AbsActor<T extends Message> implements Actor<T> {
         return this;
     }
 
+    public final void gestisciMessaggi(T mess, ActorRef<T> sender){
+        synchronized (mailBox){
+            mailBox.push(mess, sender);
+            mailBox.notifyAll();
+        }
+    }
+
+    public final void stopHelper(){
+        helper.interrupt();
+    }
+
     /**
      * Receive message
      *
@@ -74,5 +93,12 @@ public abstract class AbsActor<T extends Message> implements Actor<T> {
      */
     public void receive(T message){
         //Il messaggio andrà inserito nella mail list che avrà un accesso sinronizzato per l'inserimento
+    }
+
+    //Costruttore classe AbsActor
+    public AbsActor() {
+
+        //Faccio partire il thread che gestisce connessioni in ingresso
+        helper.start();
     }
 }

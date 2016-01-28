@@ -40,6 +40,8 @@ package it.unipd.math.pcd.actors;
 import it.unipd.math.pcd.actors.exceptions.NoSuchActorException;
 
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A map-based implementation of the actor system.
@@ -54,6 +56,28 @@ public abstract class AbsActorSystem implements ActorSystem {
      * Associates every Actor created with an identifier.
      */
     private Map<ActorRef<?>, Actor<?>> actors;
+
+    //costruttore
+    public AbsActorSystem(){
+        actors = new ConcurrentHashMap<>();
+    }
+
+    //metodo pubblico per controllare se chiave esiste
+    public boolean containKey(ActorRef a){
+        return actors.containsKey(a);
+    }
+
+    //metodo per rimuovere attore
+    public void removeActor(ActorRef a){
+        actors.remove(a);
+    }
+
+    //creo una vista sulla mappa sulla quale andrò a scorrere gli elementi
+    public Set<ActorRef<?>> getSet(){
+        return actors.keySet();
+    }
+
+
 
     public ActorRef<? extends Message> actorOf(Class<? extends Actor> actor, ActorMode mode) {
 
@@ -79,4 +103,13 @@ public abstract class AbsActorSystem implements ActorSystem {
     }
 
     protected abstract ActorRef createActorReference(ActorMode mode);
+
+    //ottengo actor a partire da actorRef
+    public Actor getActor(ActorRef a) throws NoSuchActorException{
+        Actor aux = actors.get(a);
+        if(aux == null)
+            throw new NoSuchActorException();
+        else
+            return aux;
+    }
 }
