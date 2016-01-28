@@ -39,9 +39,9 @@ package it.unipd.math.pcd.actors;
 
 import it.unipd.math.pcd.actors.exceptions.NoSuchActorException;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A map-based implementation of the actor system.
@@ -57,27 +57,44 @@ public abstract class AbsActorSystem implements ActorSystem {
      */
     private Map<ActorRef<?>, Actor<?>> actors;
 
-    //costruttore
+    /**
+     * Costruttore della classe, istanzia la mappa delle associazioni ActorRef-Actor
+     */
     public AbsActorSystem(){
-        actors = new ConcurrentHashMap<>();
+        actors = new HashMap<>();
     }
 
-    //metodo pubblico per controllare se chiave esiste
+    /**
+     * Metodo pubblico per controllare se una chiave (ActorRef) esiste nella mappa
+     */
     public boolean containKey(ActorRef a){
         return actors.containsKey(a);
     }
 
-    //metodo per rimuovere attore
+    /**
+     * Metodo per rimuovere una coppia ActorRef-Actor dalla mappa
+     */
     public void removeActor(ActorRef a){
         actors.remove(a);
     }
 
-    //creo una vista sulla mappa sulla quale andrò a scorrere gli elementi
+    /**
+     * Creo una vista sulla mappa sulla quale andrò a scorrere gli elementi
+     */
     public Set<ActorRef<?>> getSet(){
         return actors.keySet();
     }
 
-
+    /**
+     * Metodo per ottenere un Actor a partire da ActorRef
+     */
+    public Actor getActor(ActorRef a) throws NoSuchActorException{
+        Actor aux = actors.get(a);
+        if(aux == null)
+            throw new NoSuchActorException();
+        else
+            return aux;
+    }
 
     public ActorRef<? extends Message> actorOf(Class<? extends Actor> actor, ActorMode mode) {
 
@@ -103,13 +120,4 @@ public abstract class AbsActorSystem implements ActorSystem {
     }
 
     protected abstract ActorRef createActorReference(ActorMode mode);
-
-    //ottengo actor a partire da actorRef
-    public Actor getActor(ActorRef a) throws NoSuchActorException{
-        Actor aux = actors.get(a);
-        if(aux == null)
-            throw new NoSuchActorException();
-        else
-            return aux;
-    }
 }

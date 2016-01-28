@@ -1,11 +1,11 @@
 package it.unipd.math.pcd.actors;
 
 /**
- * Created by Alberto on 27/01/16.
+ * Created by Alberto Ferrara.
  */
 
 /**
- * Thread che resta in ascolto dei messaggi in ingresso per ogni Actor
+ * Definisce un Thread che resta in ascolto dei messaggi in ingresso per ogni Actor
  */
 public class ActorHelper implements Runnable {
 
@@ -19,45 +19,75 @@ public class ActorHelper implements Runnable {
 
     @Override
     public void run() {
-        //ciclo finche il thread che sta eseguendo non entra nello stato interrupted
         try{
-            while(!Thread.currentThread().isInterrupted()){
+            /**
+             * Ciclo potenzialmente all'infinito, finchè il Thread non viene interrotto
+             */
+            while(true){
+                /**
+                 * Sicronizzo l'accesso alla mailBox
+                 */
                 synchronized (mBox){
-                    //finchè non ci sono nuovi messaggi nella mail box metto in attesa
+                    /**
+                     * Finchè non ci sono nuovi messaggi nella mailbox metto in attesa e rilascio il lock
+                     */
                     while(mBox.getSize()==0){
                         mBox.wait();
                     }
                 }
-                //se sono qui, ho superato la condizione e la dimensione della mailbox>0
+                /**
+                 * Se sono qui, ho superato la condizione e la dimensione della mailbox>0. Sincronizzo sull'oggetto
+                 */
                 synchronized (this){
-                    //rimuovo il nuovo messaggio dalla prima posizione
+                    /**
+                     * Rimuovo il nuovo messaggio dalla prima posizione e lo salvo
+                     */
                     ConcMessage mex = mBox.pop();
-                    //setto il mandante del messaggio e lo passo all'actor che deve riceverlo
+                    /**
+                     * Setto il mandante del messaggio e lo passo all'Actor che deve riceverlo
+                     */
                     act.sender = mex.getcActor();
-                    //setto il messaggio che l'actor deve ricevere
+                    /**
+                     * Recupero il messaggio e lo passo all'actor che deve riceverlo
+                     */
                     act.receive(mex.getcMessage());
                 }
             }
         }
         catch (InterruptedException ie){
-            //qui andrebbe gestita l'eccezione di thread interrotto
+            /**
+             * Qui andrebbe gestita l'eccezione di thread interrotto
+             */
         }
         finally {
-            //qui devo gestire il momento in cui il thread viene interrotto ma deve comunque finire di inserire i messaggi
+            /**
+             * Qui devo gestire il momento in cui il thread viene interrotto ma deve comunque finire di rimuovere i messaggi e passarli all'Actor ricevente
+             */
             synchronized (mBox){
                 while(mBox.getSize()>0){
-                    //rimuovo il nuovo messaggio dalla prima posizione
+                    /**
+                     * Rimuovo il nuovo messaggio dalla prima posizione
+                     */
                     ConcMessage mex = mBox.pop();
-                    //setto il mandante del messaggio e lo passo all'actor che deve riceverlo
+                    /**
+                     * Setto il mandante del messaggio e lo passo all'Actor che deve riceverlo
+                     */
                     act.sender = mex.getcActor();
-                    //setto il messaggio che l'actor deve ricevere
+                    /**
+                     * Recupero il messaggio e lo passo all'actor che deve riceverlo
+                     */
                     act.receive(mex.getcMessage());
                 }
             }
-            //qui ho svuotato tutta la coda dei messaggi
+            /**
+             * Qui ho svuotato tutta la coda dei messaggi da mandare, sincronizzo sull'attore
+             */
             synchronized (act){
+                /**
+                 * Setto a true la variabile dell'Actor che indica quando l'attore è stoppato
+                 */
                 act.stopDone = true;
-                act.notify();
+                act.notifyAll();
             }
         }
 

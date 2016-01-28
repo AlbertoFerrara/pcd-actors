@@ -56,14 +56,6 @@ public abstract class AbsActor<T extends Message> implements Actor<T> {
      */
     protected ActorRef<T> sender;
 
-    //campo dati privato e finale per evitare modifiche del riferimento, è la mail box del singolo attore
-    private final MailBox<T> mailBox= new ImplMailBox<>();
-
-    //variabile che uso per capire se l'attore è stato interrotto e ha finito di gestire tutti i suoi messaggi
-    public boolean stopDone = false;
-
-    //thread che gestisce i messaggi in ingresso
-    private final Thread helper = new Thread(new ActorHelper(this, mailBox));
     /**
      * Sets the self-referece.
      *
@@ -75,24 +67,44 @@ public abstract class AbsActor<T extends Message> implements Actor<T> {
         return this;
     }
 
+    /**
+     * Campo dati privato e finale per evitare modifiche del riferimento, è la mail box del singolo attore
+     * */
+    private final MailBox<T> mailBox= new ImplMailBox<>();
+
+    /**
+     *Variabile che uso per capire se l'attore è stato interrotto e se ha finito di gestire tutti i suoi messaggi
+    */
+     public boolean stopDone = false;
+
+    /**
+     * Thread che gestisce i messaggi in ingresso
+     */
+    private final Thread helper = new Thread(new ActorHelper(this, mailBox));
+
+    /**
+     * Metodo che gestisce i messaggi inserendoli nella MailBox (dopo aver preso il lock)
+     */
     public final void gestisciMessaggi(T mess, ActorRef<T> sender){
         synchronized (mailBox){
-                 mailBox.push(mess, sender);
-                 mailBox.notifyAll();
-
+            if(!stopDone) {
+                mailBox.push(mess, sender);
+                mailBox.notifyAll();
+            }
         }
     }
 
+    /**
+     * Metodo per fermare il thread di gestione dei messaggi in ingresso, chiamato dal metodo stop dell'actorsystem
+     */
     public final void stopHelper(){
         helper.interrupt();
     }
 
-
-    //Costruttore classe AbsActor
-    public AbsActor() {
-
-        //Faccio partire il thread che gestisce connessioni in ingresso
+    /**
+     * Costruttore classe AbsActor, fa partire il thread che gestisce i messaggi in ingresso
+    */
+     public AbsActor() {
         helper.start();
     }
-
 }

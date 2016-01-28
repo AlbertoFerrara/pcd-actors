@@ -5,7 +5,7 @@ package it.unipd.math.pcd.actors;
  */
 
 /**
- *Implementazione di message, mi serve per inserire nella mailbox un messaggio e un sender
+ *Implementazione di Message, serve per inserire nella Mailbox un messaggio e un sender
  */
 
 public class ConcMessage<T extends Message> {
