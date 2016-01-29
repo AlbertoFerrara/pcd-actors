@@ -40,6 +40,7 @@ package it.unipd.math.pcd.actors;
 import it.unipd.math.pcd.actors.exceptions.NoSuchActorException;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -117,6 +118,69 @@ public abstract class AbsActorSystem implements ActorSystem {
     @Override
     public ActorRef<? extends Message> actorOf(Class<? extends Actor> actor) {
         return this.actorOf(actor, ActorMode.LOCAL);
+    }
+
+
+    /**
+     * Metodo per stoppare un Actor in particolare, se l'actor non è presente nella mappa solleva eccezione
+     */
+    public  void stop(ActorRef<?> actor) throws NoSuchActorException{
+        /**
+         * Metodo per controllare se Actor è presente nella mappa
+         */
+        if(containKey(actor)) {
+            /**
+             * Casto a AbsActor perchè getActor ritorna un actor
+             */
+            AbsActor aux = (AbsActor) getActor(actor);
+            /**
+             * Controllo che l'attore non sia già stato stoppato
+             */
+            if(!aux.stopDone) {
+
+                /**
+                 * Stoppo il thread che gestisce la ricezione dei nuovi messaggi
+                 */
+                aux.stopHelper();
+
+                /**
+                 * Sincronizzo sull'Actor per metterlo in attesa affinchè non sia stata settata a false la variabile, ovvero ho svuotato tutta la lista dei messaggi della mailbox
+                 */
+                synchronized (aux) {
+                    while (!aux.stopDone) {
+                        try {
+                            aux.wait();
+                        } catch (InterruptedException ie) {
+                            //gestione dell'eccezione
+                        }
+                    }
+                    /**
+                     * Rimuovo l'attore dalla mappa
+                     */
+                    removeActor(actor);
+                }
+            }
+            else{
+                throw new NoSuchActorException("L'attore è già stato stoppato");
+            }
+        }
+        else
+            throw new NoSuchActorException("Attore non trovato");
+
+    }
+
+    /**
+     * Metodo per ciclare su tutti gli attori presenti e stopparli tutti
+     */
+    public void stop(){
+        Iterator iter = getSet().iterator();
+        while(iter.hasNext()){
+            /**
+             * Richiamo il metodo stop che ferma l'Actor (che gli viene passato dopo averlo ritornato con l'iteratore)
+             */
+            stop((ActorRef<?>) iter.next());
+        }
+
     }
 
     protected abstract ActorRef createActorReference(ActorMode mode);

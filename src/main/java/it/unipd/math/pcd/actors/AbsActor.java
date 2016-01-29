@@ -37,6 +37,8 @@
  */
 package it.unipd.math.pcd.actors;
 
+import it.unipd.math.pcd.actors.exceptions.NoSuchActorException;
+
 /**
  * Defines common properties of all actors.
  *
@@ -69,42 +71,132 @@ public abstract class AbsActor<T extends Message> implements Actor<T> {
 
     /**
      * Campo dati privato e finale per evitare modifiche del riferimento, è la mail box del singolo attore
-     * */
-    private final MailBox<T> mailBox= new ImplMailBox<>();
-
-    /**
-     *Variabile che uso per capire se l'attore è stato interrotto e se ha finito di gestire tutti i suoi messaggi
-    */
-     public boolean stopDone = false;
-
-    /**
-     * Thread che gestisce i messaggi in ingresso
      */
-    private final Thread helper = new Thread(new ActorHelper(this, mailBox));
+    private final MailBox<T> mailBox = new ImplMailBox<>();
+
+    /**
+     * Variabile volatile che uso per capire se l'attore è stato interrotto e se ha finito di gestire tutti i suoi messaggi
+     */
+    public volatile boolean stopDone = false;
 
     /**
      * Metodo che gestisce i messaggi inserendoli nella MailBox (dopo aver preso il lock)
      */
-    public final void gestisciMessaggi(T mess, ActorRef<T> sender){
-        synchronized (mailBox){
-            if(!stopDone) {
+    public final void gestisciMessaggi(T mess, ActorRef<T> sender) {
+        synchronized (mailBox) {
+            if (!stopDone) {
                 mailBox.push(mess, sender);
                 mailBox.notifyAll();
             }
         }
     }
 
+    public void setStopDoneTrue() throws NoSuchActorException {
+        if (stopDone == true)
+            throw new NoSuchActorException("Attore già stoppato");
+        else
+            stopDone = true;
+    }
+
     /**
      * Metodo per fermare il thread di gestione dei messaggi in ingresso, chiamato dal metodo stop dell'actorsystem
      */
-    public final void stopHelper(){
-        helper.interrupt();
+    public final void stopHelper() {
+        setStopDoneTrue();
     }
 
     /**
      * Costruttore classe AbsActor, fa partire il thread che gestisce i messaggi in ingresso
-    */
-     public AbsActor() {
+     */
+    public AbsActor() {
+        Thread helper = new Thread(new ActorHelper());
         helper.start();
     }
+
+    /**
+     * Classe interna che implementa un runnable, andrà ad essere inserito ed eseguito in un thread creato nel costruttore di AbsActor
+     */
+    private class ActorHelper implements Runnable {
+        public void run() {
+            try {
+                /**
+                 * Ciclo potenzialmente all'infinito
+                 */
+                while (!stopDone) {
+                    /**
+                     * Sicronizzo l'accesso alla mailBox
+                     */
+                    synchronized (mailBox) {
+                        /**
+                         * Finchè non ci sono nuovi messaggi nella mailbox metto in attesa e rilascio il lock
+                         */
+                        while (mailBox.isEmpty()) {
+                            mailBox.wait();
+                        }
+                    }
+                    /**
+                     * Se sono qui, ho superato la condizione e la dimensione della mailbox>0. Sincronizzo sull'oggetto
+                     */
+                    synchronized (this) {
+                        /**
+                         * Rimuovo il nuovo messaggio dalla prima posizione e lo salvo
+                         */
+                        ConcMessage mex = mailBox.pop();
+                        /**
+                         * Setto il mandante del messaggio e lo passo all'Actor che deve riceverlo
+                         */
+                        sender = mex.getcActor();
+                        /**
+                         * Recupero il messaggio e lo passo all'actor che deve riceverlo
+                         */
+                        receive((T) mex.getcMessage());
+                    }
+                }
+            } catch (InterruptedException ie) {
+                /**
+                 * Qui andrebbe gestita l'eccezione di thread interrotto
+                 */
+            } finally {
+                /**
+                 * Qui devo gestire il momento in cui il thread viene interrotto ma deve comunque finire di rimuovere i messaggi e passarli all'Actor ricevente
+                 */
+                EmptyMailBox();
+                /**
+                 * Qui ho svuotato tutta la coda dei messaggi da mandare, sincronizzo sull'attore
+                 */
+                synchronized (AbsActor.this) {
+                    /**
+                     * Setto a true la variabile dell'Actor che indica quando l'attore è stoppato
+                     */
+                    try {
+                        setStopDoneTrue();
+                        notifyAll();
+                    } catch (NoSuchActorException nsa) {
+
+                    }
+                }
+            }
+        }
+
+        /**
+         * Metodo sincronizzato per svuotare la MailBox
+         */
+        private synchronized void EmptyMailBox() {
+            while (!mailBox.isEmpty()) {
+                /**
+                 * Rimuovo il nuovo messaggio dalla prima posizione
+                 */
+                ConcMessage mex = mailBox.pop();
+                /**
+                 * Setto il mandante del messaggio e lo passo all'Actor che deve riceverlo
+                 */
+                sender = mex.getcActor();
+                /**
+                 * Recupero il messaggio e lo passo all'actor che deve riceverlo
+                 */
+                receive((T) mex.getcMessage());
+            }
+        }
+    }
 }
+

@@ -42,8 +42,8 @@ public class ImplMailBox<T extends Message> implements MailBox<T>  {
         }
     }
 
-    public int getSize(){
-        return listL.size();
+    public boolean isEmpty(){
+        return listL.isEmpty();
     }
 
 }

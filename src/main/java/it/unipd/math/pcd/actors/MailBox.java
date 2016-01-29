@@ -20,6 +20,6 @@ public interface MailBox<T extends Message> {
     /*
         Ottengo dimensione della mailbox
      */
-    public int getSize();
+    public boolean isEmpty();
 
 }
